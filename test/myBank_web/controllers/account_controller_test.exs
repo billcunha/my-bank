@@ -3,8 +3,8 @@ defmodule MyBankWeb.AccountControllerTest do
 
   alias MyBank.Accounts
 
-  # @create_attrs [%{account_id: 1515, balance: 51.25, value: 0, description: "initial value"},
-  #                 %{account_id: 2020, balance: 68.12, value: 0, description: "initial value"}]
+  @create_transfer_users_attrs [%{name: "Fabrício", email: "bill@aoc.com", password_hash: "200820e3227815ed1756a6b531e7e0d2"},
+                                %{name: "Jessica", email: "jessica@aoc.com", password_hash: "200820e3227815ed1756a6b531e7e0d2"}]
 
   @create_user_attrs %{name: "Fabrício", email: "bill@aoc.com", password_hash: "200820e3227815ed1756a6b531e7e0d2"}
 
@@ -31,26 +31,66 @@ defmodule MyBankWeb.AccountControllerTest do
     end
   end
 
-  # describe "transfer/2" do
-  #     setup [:create_transfer_account]
+  describe "transfer/2" do
+    setup [:create_transfer_account]
 
-  #     test "Transfer value and responds the new balance of the account", %{conn: conn, account1: account1} do
+    test "Transfer value and responds the new balance of the account", %{conn: conn, account1: account1, account2: account2} do
 
-  #         response =
-  #             conn
-  #             |> post(Routes.account_path(conn, :transfer, account1.account_id, 2020, %{value: 30}))
-  #             |> json_response(200)
+      response =
+        conn
+        |> post(Routes.account_path(conn, :transfer, account1.user_id, account2.user_id, %{value: 30}))
+        |> json_response(200)
 
-  #         expected = %{"data" => %{"account_id" => account1.account_id, "balance" => 21.25}}
+      expected = %{"data" => %{"account_id" => account1.user_id, "balance" => 21.25}}
 
-  #         assert response == expected
-  #     end
-  # end
+      assert response == expected
+    end
 
-  # defp create_transfer_account(_) do
-  #     [{:ok, account1}, {:ok, account2}] = Enum.map(@create_attrs, &Accounting.create_account(&1))
-  #     {:ok, account1: account1, account2: account2}
-  # end
+    test "Try transfer value bigger then balance of the account", %{conn: conn, account1: account1, account2: account2} do
+
+      response =
+        conn
+        |> post(Routes.account_path(conn, :transfer, account1.user_id, account2.user_id, %{value: 680}))
+        |> json_response(404)
+
+      expected = %{"message" => "Balance not sufficient"}
+
+      assert response == expected
+    end
+
+    test "Try transfer to a inexistent account", %{conn: conn, account1: account1} do
+
+      response =
+        conn
+        |> post(Routes.account_path(conn, :transfer, account1.user_id, -1, %{value: 30}))
+        |> json_response(404)
+
+      expected = %{"message" => "Destination account not found"}
+
+      assert response == expected
+    end
+
+    test "Try transfer from a inexistent account", %{conn: conn, account2: account2} do
+
+      response =
+        conn
+        |> post(Routes.account_path(conn, :transfer, -1, account2.user_id, %{value: 30}))
+        |> json_response(404)
+
+      expected = %{"message" => "Source account not found"}
+
+      assert response == expected
+    end
+  end
+
+  defp create_transfer_account(_) do
+    [{:ok, user1}, {:ok, user2}] = Enum.map(@create_transfer_users_attrs, &Accounts.create_user(&1))
+
+    {:ok, account1} = Accounts.create_account(%{balance: 51.25, value: 51.25, description: "initial value"}, user1)
+    {:ok, account2} = Accounts.create_account(%{balance: 18.34, value: 18.34, description: "initial value"}, user2)
+
+    {:ok, account1: account1, account2: account2}
+  end
 
   defp create_user(_) do
       {:ok, user} = Accounts.create_user(@create_user_attrs)

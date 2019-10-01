@@ -202,4 +202,40 @@ defmodule MyBank.Accounts do
   def get_balance(account_id) do
     Account |> where(user_id: ^account_id) |> last(:inserted_at) |> Repo.one
   end
+
+  def transfer(source_account_id, destination_account_id, value) do
+    case get_balance(source_account_id) do
+      nil ->
+        {:error, message: "Source account not found"}
+
+      source_account ->
+        cond do
+          source_account.balance < value ->
+            {:error, message: "Balance not sufficient"}
+
+          source_account.balance >= value ->
+            case get_balance(destination_account_id) do
+              nil ->
+                {:error, message: "Destination account not found"}
+
+              destination_account ->
+                source_user = get_user!(source_account_id)
+                case create_account(%{account_id: source_account_id, description: "transfer", balance: source_account.balance - value, value: value}, source_user) do
+                  {:ok, new_account} ->
+                    destination_user = get_user!(destination_account_id)
+                    case create_account(%{account_id: destination_account_id, description: "transfer", balance: destination_account.balance + value, value: value}, destination_user) do
+                      {:ok, _} ->
+                        {:ok, account: new_account}
+
+                      :error ->
+                        {:error, message: "Internal error"}
+                    end
+                  
+                  :error ->
+                    {:error, message: "Internal error"}
+                end
+            end
+        end
+    end
+  end
 end

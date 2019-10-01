@@ -52,4 +52,19 @@ defmodule MyBankWeb.AccountController do
       send_resp(conn, :no_content, "")
     end
   end
+
+  def transfer(conn, %{"id" => id, "destination" => destination_account_id, "value" => value}) do
+    {ammount, _} = if is_integer(value) == true, do: value, else: Integer.parse(value)
+    {source_account_id, _} = if is_integer(id) == true, do: value, else: Integer.parse(id)
+
+    case Accounts.transfer(source_account_id, destination_account_id, ammount) do
+      {:error, message: message} ->
+        conn
+        |> put_status(:not_found)
+        |> json(%{message: message})
+
+      {:ok, account: account} ->
+        render(conn, "show.json", account: account)
+    end
+  end
 end
