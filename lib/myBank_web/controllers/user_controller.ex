@@ -40,4 +40,18 @@ defmodule MyBankWeb.UserController do
       send_resp(conn, :no_content, "")
     end
   end
+
+  def login(conn, %{"email" => email, "password" => password}) do
+    case Accounts.authenticate(email, password) do
+      {:ok, user: user} ->
+        conn = put_session(conn, :user, user)
+        conn
+        |> put_status(:ok)
+        |> json(%{ok: "done"})
+      {:error, :unauthorized} ->
+        conn
+        |> put_status(:unauthorized)
+        |> json(%{error: "Login error"})
+    end
+  end
 end

@@ -238,4 +238,36 @@ defmodule MyBank.Accounts do
         end
     end
   end
+
+  def authenticate(email, password) do
+    case email_password_auth(email, password) do
+      {:ok, user} ->
+        {:ok, user: user}
+      _ ->
+        {:error, :unauthorized}
+    end
+  end
+
+  defp email_password_auth(email, password) do
+    with {:ok, user} <- get_by_email(email),
+    do: verify_password(password, user)
+  end
+
+  defp get_by_email(email) do
+    case Repo.get_by(User, email: email) do
+      nil ->
+        {:error, "Login error."}
+      user ->
+        {:ok, user}
+    end
+  end
+
+  defp verify_password(password, %User{} = user) do
+    hash = :crypto.hash(:sha, password) |> Base.encode16 |> String.downcase
+    if (hash == user.password_hash) do
+      {:ok, user}
+    else
+      {:error, :invalid_password}
+    end
+  end
 end
