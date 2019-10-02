@@ -6,8 +6,16 @@ MyBank is a simple api to control bank accounts with users. It was written in [P
 
 The api provides functions to:
 - Login using user data
+
+POST to `http://[address]/api/v1/login` with `{"email": "", "password": ""}` in body
+
 - Get the balance of the account
+
+GET to `http://[address]/api/v1/account/:id`
+
 - Transfer ammount of value to the target account
+
+POST to `http://[address]/api/v1/account/:from_id/transfer/:to_id` with `{"value": ""}` in body
 
 ## Installation
 
