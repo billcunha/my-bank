@@ -18,11 +18,6 @@ defmodule MyBankWeb.AccountController do
     end
   end
 
-  def index_old(conn, _params) do
-    accounts = Accounts.list_accounts()
-    render(conn, "index.json", accounts: accounts)
-  end
-
   def create(conn, %{"account" => account_params}) do
     with {:ok, %Account{} = account} <- Accounts.create_account(account_params) do
       conn
@@ -60,7 +55,7 @@ defmodule MyBankWeb.AccountController do
     case Accounts.transfer(source_account_id, destination_account_id, ammount) do
       {:error, message: message} ->
         conn
-        |> put_status(:not_found)
+        |> put_status(:forbidden)
         |> json(%{message: message})
 
       {:ok, account: account} ->

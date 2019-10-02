@@ -1,5 +1,6 @@
 defmodule MyBankWeb.AccountControllerTest do
   use MyBankWeb.ConnCase
+  use Plug.Test
 
   alias MyBank.Accounts
 
@@ -12,6 +13,7 @@ defmodule MyBankWeb.AccountControllerTest do
     setup [:create_user]
 
     test "Responds with account info if the account is found", %{conn: conn, user: user} do
+      conn = init_test_session(conn, %{user: user})
       {:ok, account} = Accounts.create_account(%{balance: 51.25, value: 51.25, description: "initial value"}, user)
 
       response =
@@ -25,6 +27,7 @@ defmodule MyBankWeb.AccountControllerTest do
     end
 
     test "Responds with a message indicating account not found", %{conn:  conn} do
+      conn = init_test_session(conn, %{user: "5"})
       conn = get(conn, Routes.account_path(conn, :index, -1))
 
       assert text_response(conn, 404) == "Account not found"
@@ -35,6 +38,7 @@ defmodule MyBankWeb.AccountControllerTest do
     setup [:create_transfer_account]
 
     test "Transfer value and responds the new balance of the account", %{conn: conn, account1: account1, account2: account2} do
+      conn = init_test_session(conn, %{user: "5"})
 
       response =
         conn
@@ -47,11 +51,12 @@ defmodule MyBankWeb.AccountControllerTest do
     end
 
     test "Try transfer value bigger then balance of the account", %{conn: conn, account1: account1, account2: account2} do
+      conn = init_test_session(conn, %{user: "5"})
 
       response =
         conn
         |> post(Routes.account_path(conn, :transfer, account1.user_id, account2.user_id, %{value: 680}))
-        |> json_response(404)
+        |> json_response(403)
 
       expected = %{"message" => "Balance not sufficient"}
 
@@ -59,11 +64,12 @@ defmodule MyBankWeb.AccountControllerTest do
     end
 
     test "Try transfer to a inexistent account", %{conn: conn, account1: account1} do
+      conn = init_test_session(conn, %{user: "5"})
 
       response =
         conn
         |> post(Routes.account_path(conn, :transfer, account1.user_id, -1, %{value: 30}))
-        |> json_response(404)
+        |> json_response(403)
 
       expected = %{"message" => "Destination account not found"}
 
@@ -71,11 +77,12 @@ defmodule MyBankWeb.AccountControllerTest do
     end
 
     test "Try transfer from a inexistent account", %{conn: conn, account2: account2} do
+      conn = init_test_session(conn, %{user: "5"})
 
       response =
         conn
         |> post(Routes.account_path(conn, :transfer, -1, account2.user_id, %{value: 30}))
-        |> json_response(404)
+        |> json_response(403)
 
       expected = %{"message" => "Source account not found"}
 
@@ -93,7 +100,7 @@ defmodule MyBankWeb.AccountControllerTest do
   end
 
   defp create_user(_) do
-      {:ok, user} = Accounts.create_user(@create_user_attrs)
-      {:ok, user: user}
+    {:ok, user} = Accounts.create_user(@create_user_attrs)
+    {:ok, user: user}
   end
 end
