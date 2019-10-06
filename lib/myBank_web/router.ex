@@ -14,6 +14,7 @@ defmodule MyBankWeb.Router do
     pipe_through :api
 
     post "/login", UserController, :login
+    post "/sign_in", UserController, :sign_in
   end
 
   scope "/api/v1", MyBankWeb do
